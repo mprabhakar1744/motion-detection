@@ -1,129 +1,58 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+import cv2
+import numpy as np
+from playsound import playsound
 
-# C extensions
-*.so
+# Video Capture
+# capture = cv2.VideoCapture(0)
+capture =cv2.VideoCapture('demo.mov')
+length=int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+print(length)
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# History, Threshold, DetectShadows 
+fgbg = cv2.createBackgroundSubtractorMOG2(100, 400, True)
+fgbg = cv2.createBackgroundSubtractorMOG2(500, 4000, True)
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+# Keeps track of what frame we're on
+frameCount = 0
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+while(1):
+	# Return Value and the current frame
+	ret, frame = capture.read()
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+	#  Check if a current frame actually exist
+	if not ret:
+		break
 
-# Translations
-*.mo
-*.pot
+	frameCount += 1
+	# Resize the frame
+	resizedFrame = cv2.resize(frame, (0,0), fx=0.50, fy=0.50)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+	# Get the foreground mask
+	fgmask = fgbg.apply(resizedFrame)
 
-# Flask stuff:
-instance/
-.webassets-cache
+	# Count all the non zero pixels within the mask
+	count = np.count_nonzero(fgmask)
 
-# Scrapy stuff:
-.scrapy
+	print('Frame: %d, Pixel Count: %d' % (frameCount, count))
 
-# Sphinx documentation
-docs/_build/
+	# Determine how many pixels do you want to detect to be considered "movement"
+	#if (frameCount > 10 and count > 5000):
+	if (frameCount > 50 and count > 5000):
+		print('**********************************movement is detected********************************')
+		cv2.putText(resizedFrame, '*******************movement is detected*************************', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+		playsound('beep-01a.wav')
+	cv2.imshow('Frame', resizedFrame)
+	cv2.imshow('Mask', fgmask)
 
-# PyBuilder
-target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+	k = cv2.waitKey(1) & 0xff
+	if k == 27:
+		break
 
-# IPython
-profile_default/
-ipython_config.py
+	elif k == 32:
+		continue
 
-# pyenv
-.python-version
+	else:
+		print(k)
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
+capture.release()
