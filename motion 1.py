@@ -1,0 +1,58 @@
+import cv2
+import numpy as np
+from playsound import playsound
+
+# Video Capture
+# capture = cv2.VideoCapture(0)
+capture =cv2.VideoCapture('demo.mov')
+length=int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+print(length)
+
+# History, Threshold, DetectShadows 
+fgbg = cv2.createBackgroundSubtractorMOG2(100, 400, True)
+fgbg = cv2.createBackgroundSubtractorMOG2(500, 4000, True)
+
+# Keeps track of what frame we're on
+frameCount = 0
+
+while(1):
+	# Return Value and the current frame
+	ret, frame = capture.read()
+
+	#  Check if a current frame actually exist
+	if not ret:
+		break
+
+	frameCount += 1
+	# Resize the frame
+	resizedFrame = cv2.resize(frame, (0,0), fx=0.50, fy=0.50)
+
+	# Get the foreground mask
+	fgmask = fgbg.apply(resizedFrame)
+
+	# Count all the non zero pixels within the mask
+	count = np.count_nonzero(fgmask)
+
+	print('Frame: %d, Pixel Count: %d' % (frameCount, count))
+
+	# Determine how many pixels do you want to detect to be considered "movement"
+	#if (frameCount > 10 and count > 5000):
+	if (frameCount > 50 and count > 5000):
+		print('**********************************movement is detected********************************')
+		cv2.putText(resizedFrame, '*******************movement is detected*************************', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+		playsound('beep-01a.wav')
+	cv2.imshow('Frame', resizedFrame)
+	cv2.imshow('Mask', fgmask)
+
+
+	k = cv2.waitKey(1) & 0xff
+	if k == 27:
+		break
+
+	elif k == 32:
+		continue
+
+	else:
+		print(k)
+
+capture.release()
